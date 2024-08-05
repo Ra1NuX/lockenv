@@ -21,7 +21,7 @@ yargs(hideBin(process.argv))
     default: "./.env",
   })
   .command(
-    "create project <project>",
+    "create <project>",
     "Creates new project",
     (yargs) =>
       yargs
@@ -72,7 +72,7 @@ yargs(hideBin(process.argv))
     }
   )
   .command(
-    "delete project <id>",
+    "delete <id>",
     "Is used for delete a project based on a project id, check the project ids using lockenv list",
     (yargs) =>
       yargs.positional("id", {

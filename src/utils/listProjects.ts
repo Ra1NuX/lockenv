@@ -4,7 +4,7 @@ import { Environments, Projects } from "../models/db";
 export const listProjects = (id?: number) => {
   try {
     if (id) {
-      const enviromentsQuery = db.prepare<Environments, any>(
+      const enviromentsQuery = db.query<Environments, any>(
         `SELECT * FROM environments WHERE project_id = ?1`
       );
       const environments = enviromentsQuery.all(id);
@@ -14,7 +14,7 @@ export const listProjects = (id?: number) => {
       return;
     }
 
-    const projectQuery = db.prepare<Projects, any>(
+    const projectQuery = db.query<Projects, any>(
       `SELECT project_id as id, name, environment FROM projects`
     );
     const rows = projectQuery.all();
@@ -26,7 +26,7 @@ export const listProjects = (id?: number) => {
       return;
     }
 
-    const enviromentsQuery = db.prepare<Environments, any>(
+    const enviromentsQuery = db.query<Environments, any>(
       `SELECT * FROM environments`
     );
     const environments = enviromentsQuery.all();

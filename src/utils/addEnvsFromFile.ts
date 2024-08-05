@@ -4,6 +4,7 @@ import { NewEnv } from "../models/envs";
 import checkMetadata from "./checkMetadata";
 
 import chalk from 'chalk';
+import createProject from "./createProject";
 const log = console.log;
 
 const regex = /(\w+)=["']?([^"\n\r]*)["']?/g;
@@ -27,10 +28,22 @@ const addEnvsFromFile = async (project: string, environment: string, route: stri
   const projectToUse = project??metaProject;
   const environmentToUse = project ? environment : metaEnvironment??environment
 
-  const projectQuery = db.query<Projects, any>('SELECT project_id as id FROM projects WHERE name=? AND environment=? LIMIT 1');
-  const [{id: projectId}] = projectQuery.all(projectToUse, environmentToUse);
+  const projectQuery = db.query<Partial<Projects>, any>('SELECT project_id as id FROM projects WHERE name=? AND environment=? LIMIT 1');
+  let [projectData] = projectQuery.all(projectToUse, environmentToUse);
+
+  if(!projectData) {
+    const createConfirm = confirm('There is no project with this name, do you want to create it automatically?');
+    if(!createConfirm) return;
+    const id = createProject(projectToUse, environmentToUse);
+    projectData = {
+      id,
+    }
+  }
+
+  const { id: projectId } = projectData;
 
   
+
   if(isOutdated) {
     console.info(`It's seems you have an outdated version in your envfile (${version}), or the tool (${toolVersion})`)
   }
@@ -89,8 +102,8 @@ const addEnvsFromFile = async (project: string, environment: string, route: stri
 
   createdEnvs.forEach(({key, value}) => {
     log(chalk.greenBright.bold(`[ + ] ${key}=${value}`));
-    const insertQuery = db.query(`INSERT INTO environments (key, value) VALUES (${key}, ${value}) WHERE project_id=${projectId}`);
-    insertQuery.run();
+    const insertQuery = db.query(`INSERT INTO environments (project_id, key, value) VALUES (?,?,?)`);
+    insertQuery.run(projectId!, key, value);
   })
 
 }

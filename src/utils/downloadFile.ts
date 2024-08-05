@@ -3,6 +3,7 @@ import { unlink } from "node:fs/promises";
 import { version } from "../../package.json";
 import db from "../db";
 import { Environments, Projects } from "../models/db";
+import chalk from "chalk";
 
 const downloadFile = async (project: string, env: string, route: string) => {
 
@@ -30,12 +31,14 @@ const downloadFile = async (project: string, env: string, route: string) => {
   const envQuery = db.query<Environments, any>('SELECT key, value FROM environments WHERE project_id=?');
   const data = envQuery.all(id);
 
+  let envData = `# lockenv ${version} · ${project}&${env} \n`
+
   if (data.length === 0) {
-    console.error('No environments found for the specified project_id');
-    return;
+    console.info(chalk.yellow(`No environments found for the specified id: ${id}`));
+  } else {
+    envData+= data.map((env) => `${env.key}=${env.value}`).join('\n');
   }
 
-  const envData = `# lockenv ${version} · ${project}&${env} \n` + data.map((env) => `${env.key}=${env.value}`).join('\n');
   await Bun.write(route, envData);
   console.log(`You change to ${project} (${env}) correctly!`);
 };
