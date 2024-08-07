@@ -1,15 +1,15 @@
-import db from "../db";
-import { Environments, Projects } from "../models/db";
-import { NewEnv } from "../models/envs";
-import checkMetadata from "./checkMetadata";
+import db from "../../db";
+import { Environments, Projects } from "../../models/db";
+import { NewEnv } from "../../models/envs";
+import checkMetadata from "../checkMetadata";
 
 import chalk from 'chalk';
-import createProject from "./createProject";
+import create from "./create";
 const log = console.log;
 
 const regex = /(\w+)=["']?([^"\n\r]*)["']?/g;
 
-const addEnvsFromFile = async (project: string, environment: string, route: string) => {
+const push = async (project: string, environment: string, route: string) => {
 
   const file = Bun.file(route);
   const text = await file.text();
@@ -34,7 +34,7 @@ const addEnvsFromFile = async (project: string, environment: string, route: stri
   if(!projectData) {
     const createConfirm = confirm('There is no project with this name, do you want to create it automatically?');
     if(!createConfirm) return;
-    const id = await createProject(projectToUse, environmentToUse);
+    const id = await create(projectToUse, environmentToUse);
     projectData = {
       id,
     }
@@ -43,7 +43,6 @@ const addEnvsFromFile = async (project: string, environment: string, route: stri
   const { id: projectId } = projectData;
 
   
-
   if(isOutdated) {
     console.info(`It's seems you have an outdated version in your envfile (${version}), or the tool (${toolVersion})`)
   }
@@ -110,4 +109,4 @@ const addEnvsFromFile = async (project: string, environment: string, route: stri
   })
 }
 
-export default addEnvsFromFile;
+export default push;

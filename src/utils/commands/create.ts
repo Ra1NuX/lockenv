@@ -1,16 +1,19 @@
-import { cancel, isCancel, select, spinner, text } from "@clack/prompts";
-import db from "../db";
-import { Projects } from "../models/db";
+import { cancel, intro, isCancel, select, spinner, text } from "@clack/prompts";
+import db from "../../db";
+import { Projects } from "../../models/db";
+import chalk from "chalk";
 
-const createProject = async (name?: string, environment?: string) => {
+const create = async (name?: string, environment?: string) => {
   try {
+    console.clear()
+    intro(chalk.bgCyan(' Create new project '));
     if(!name) {
       name = await text({
         message: 'What is your project name?',
         placeholder: 'lockenv',
       }) as string;
 
-      if(!name) {
+      if(!name || isCancel(name)) {
         cancel('Name cannot be blank');
         return process.exit(0)
       }
@@ -22,6 +25,7 @@ const createProject = async (name?: string, environment?: string) => {
           {value: 'prod', label: 'production'}
         ]
       }) as string
+
       if(isCancel(name) || isCancel(environment) ){
         cancel('Operation cancelled');
         return process.exit(0)
@@ -51,4 +55,4 @@ const createProject = async (name?: string, environment?: string) => {
   }
 };
 
-export default createProject;
+export default create;

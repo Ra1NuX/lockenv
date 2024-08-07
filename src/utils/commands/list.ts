@@ -1,10 +1,12 @@
-import { cancel, select } from "@clack/prompts";
-import db from "../db";
-import { Environments, Projects } from "../models/db";
+import { cancel, intro, isCancel, select } from "@clack/prompts";
+import db from "../../db";
+import { Environments, Projects } from "../../models/db";
+import chalk from "chalk";
 
-export const listProjects = async (selectedId?: number) => {
+const list = async (selectedId?: number) => {
   try {
-
+    console.clear()
+    intro(chalk.bgCyan(' List of projects '))
     let id = selectedId;
 
     if(!id) {
@@ -70,8 +72,13 @@ export const listProjects = async (selectedId?: number) => {
 
       id = await select({
         message: 'Select a project',
-        options: rowsWithEnvs.map(({environment, id, name, envs}) => ({label: `${name} (${environment})`, value: id, hint: envs})),
+        options: rowsWithEnvs.sort((a, b) => a.name.localeCompare(b.name)).map(({environment, id, name, envs}) => ({label: `${name} (${environment})`, value: id, hint: envs})),
       }) as number;
+
+      if(isCancel(id)){
+        cancel('Exitting...')
+        process.exit(0);
+      }
     }
     
     if (id) {
@@ -94,3 +101,5 @@ export const listProjects = async (selectedId?: number) => {
     console.error("Error querying projects:", error);
   }
 };
+
+export default list;

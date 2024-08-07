@@ -1,9 +1,11 @@
-import { select, confirm, isCancel, cancel} from "@clack/prompts";
-import db from "../db";
-import { Projects } from "../models/db";
+import { select, confirm, isCancel, cancel, intro} from "@clack/prompts";
+import db from "../../db";
+import { Projects } from "../../models/db";
+import chalk from "chalk";
 
-const deleteProject = async (selectedId?: number) => {
-
+const _delete = async (selectedId?: number) => {
+  console.clear();
+  intro(chalk.bgCyan(' Delete existing project '));
   let id = selectedId; 
 
   if(!id) {
@@ -20,12 +22,16 @@ const deleteProject = async (selectedId?: number) => {
 
     id = await select({
       message: 'Select a project to delete',
-      options: data.map(({id, name, environment}) => ({
+      options: data.sort( ({name: nameA}, {name: nameB}) => nameA.localeCompare(nameB)).map(({id, name, environment}) => ({
         label: `${name} (${environment})`,
         value: id,
-        hint: `${environment} is the enviroment`
       }))
     }) as number;
+
+    if(!id || isCancel(id)) {
+      cancel('Exitting...');
+      process.exit(0)
+    }
   }
 
   const querySelect = db.query<Projects, any>(
@@ -58,4 +64,4 @@ const deleteProject = async (selectedId?: number) => {
   return;
 };
 
-export default deleteProject;
+export default _delete;

@@ -1,17 +1,16 @@
-import db from "../db";
-import { Projects } from "../models/db";
+import db from "../../db";
+import { Projects } from "../../models/db";
 
-const addEnvironment = (
+const add = (
   key: string,
   value: string,
   { project, environment }: { project: string; environment: string }
 ) => {
-  // Query to get the project_id based on project name and environment
+  
   const projectQuery = db.prepare<Projects, any>(
     "SELECT project_id as id FROM projects WHERE name = ? AND environment = ?"
   );
 
-  // Fetch the project_id
   const data = projectQuery.get(project, environment);
   console.log(project, environment);
 
@@ -34,4 +33,4 @@ const addEnvironment = (
   }
 };
 
-export default addEnvironment;
+export default add;

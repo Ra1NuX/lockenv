@@ -1,26 +1,49 @@
 
+import { cancel, confirm, intro, isCancel, outro, select, spinner } from "@clack/prompts";
 import { unlink } from "node:fs/promises";
-import { version } from "../../package.json";
-import db from "../db";
-import { Environments, Projects } from "../models/db";
 import chalk from "chalk";
-import { cancel, confirm, isCancel, select, spinner } from "@clack/prompts";
 
-const downloadFile = async (project: string|undefined, env: string|undefined, route: string) => {
+import { version } from "../../../package.json";
+
+import { Environments, Projects } from "../../models/db";
+import checkMetadata from "../checkMetadata";
+import push from "./push";
+import db from "../../db";
+
+const pull = async (project: string|undefined, env: string|undefined, route: string) => {
+  console.clear();
+  intro(chalk.bgCyan(` Pull enviroments `));
+
+  let sourceEnviroment: string, sourceProject: string;
 
   const file = Bun.file(route);
+  let text; 
 
   if(await file.exists()){
-    const deleteConfirm = confirm({message: 'File exists Do you want to overwrite the file?'});
+    text = await file.text()
+    const pullConfirm = await confirm({message: `You have a file in route ${route}. Do you want to save actual enviroments?`});
 
-    if(isCancel(deleteConfirm)) {
+    if(isCancel(pullConfirm)) {
       cancel('Exiting process')
       return process.exit(0);
     }
-    
+
+    if(pullConfirm) {
+      const s = spinner()
+      s.message('Saving actual project')
+      s.start()
+      const { project: p, environment:e } = checkMetadata(text??'');
+
+      if(p && e) {
+        sourceEnviroment = e; 
+        sourceProject = p;
+        await push(sourceProject, sourceEnviroment, route);
+        s.stop(`Enviroments saved in ${sourceProject} (${sourceEnviroment})`)
+      }
+    }
     await unlink(route);
   }
-
+  
   let id: number|null = null;
 
   if(project && env){
@@ -50,11 +73,11 @@ const downloadFile = async (project: string|undefined, env: string|undefined, ro
     }
 
     id = await select({
-      message: 'Select a project to download file',
-      options: data.map(({id, name, environment}) => ({
+      message: 'Select a project',
+      initialValue: data.find(({environment, name}) => sourceProject === name && environment === sourceEnviroment )?.id,
+      options: data.sort((a,b) => a.name.localeCompare(b.name) ).map(({id, name, environment}) => ({
         label: `${name} (${environment})`,
         value: id,
-        hint: `${environment} is the enviroment`
       }))
     }) as number;
 
@@ -67,17 +90,14 @@ const downloadFile = async (project: string|undefined, env: string|undefined, ro
 
   let envData = `# lockenv ${version} · ${project}&${env} \n`
 
-  if (data.length === 0) {
-    console.info(chalk.yellow(`No environments found for the specified id: ${id}`));
-  } else {
+  if (data.length !== 0) {
     envData+= data.map((env) => `${env.key}=${env.value}`).join('\n');
   }
 
   const s = spinner()
   s.start('Downloading File...');
-
   await Bun.write(route, envData);
   s.stop(`You change to ${project} (${env}) correctly!`);
 };
 
-export default downloadFile;
+export default pull;

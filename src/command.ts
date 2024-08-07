@@ -1,11 +1,11 @@
 import yargs from "yargs";
 import { hideBin } from "yargs/helpers";
-import { listProjects } from "./utils/listProjects";
-import createProject from "./utils/createProject";
-import deleteProject from "./utils/deleteProject";
-import addEnvironment from "./utils/addEnvironment";
-import downloadFile from "./utils/downloadFile";
-import addEnvsFromFile from "./utils/addEnvsFromFile";
+import list from "./utils/commands/list";
+import push from "./utils/commands/push";
+import create from "./utils/commands/create";
+import _delete from "./utils/commands/delete";
+import add from "./utils/commands/add";
+import pull from "./utils/commands/pull";
 
 yargs(hideBin(process.argv))
   .option("environment", {
@@ -32,7 +32,7 @@ yargs(hideBin(process.argv))
     async (argv) => {
       let project: string|symbol|undefined = argv.project;
       let env: string|symbol = argv.environment;
-      await createProject(project, env);
+      await create(project, env);
       process.exit(0);
     }
   )
@@ -44,7 +44,7 @@ yargs(hideBin(process.argv))
         description: "project id to list envs",
         type: "number",
       }),
-    (argv) => listProjects(argv.id)
+    (argv) => list(argv.id)
   )
   .command(
     "add <project> <key_value>",
@@ -70,7 +70,7 @@ yargs(hideBin(process.argv))
         return;
       }
 
-      addEnvironment(key!, value!, {
+      add(key!, value!, {
         project: argv.project!,
         environment: argv.environment,
       });
@@ -85,7 +85,7 @@ yargs(hideBin(process.argv))
         type: "number",
       }),
     (argv) => {
-      deleteProject(argv.id)
+      _delete(argv.id)
     }
   )
   .command(
@@ -97,7 +97,7 @@ yargs(hideBin(process.argv))
         type: "string",
       }),
     async (argv) => {
-      await downloadFile(argv.project!, argv.environment, argv.route);
+      await pull(argv.project!, argv.environment, argv.route);
       process.exit(0)
     }
   )
@@ -110,7 +110,7 @@ yargs(hideBin(process.argv))
         type: "string",
       }),
       async (argv) => {
-        await addEnvsFromFile(argv.project!, argv.environment, argv.route)
+        await push(argv.project!, argv.environment, argv.route)
         return process.exit(0)
       }
   )
