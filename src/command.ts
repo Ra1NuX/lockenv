@@ -21,7 +21,7 @@ yargs(hideBin(process.argv))
     default: "./.env",
   })
   .command(
-    "create <project>",
+    "create [project]",
     "Creates new project",
     (yargs) =>
       yargs
@@ -29,7 +29,12 @@ yargs(hideBin(process.argv))
         description: "The name of the new proyect",
         type: "string",
       }),
-    (argv) => createProject(argv.project!, argv.environment)
+    async (argv) => {
+      let project: string|symbol|undefined = argv.project;
+      let env: string|symbol = argv.environment;
+      await createProject(project, env);
+      process.exit(0);
+    }
   )
   .command(
     "list [id]",
@@ -72,24 +77,29 @@ yargs(hideBin(process.argv))
     }
   )
   .command(
-    "delete <id>",
+    "delete [id]",
     "Is used for delete a project based on a project id, check the project ids using lockenv list",
     (yargs) =>
       yargs.positional("id", {
         description: "The id of the project to delete",
         type: "number",
       }),
-    (argv) => deleteProject(argv.id!)
+    (argv) => {
+      deleteProject(argv.id)
+    }
   )
   .command(
-    "pull <project>",
+    "pull [project]",
     "Is used for download in a file the enviroments",
     (yargs) =>
       yargs.positional("project", {
         description: "Project to download .env",
         type: "string",
       }),
-    (argv) => downloadFile(argv.project!, argv.environment, argv.route)
+    async (argv) => {
+      await downloadFile(argv.project!, argv.environment, argv.route);
+      process.exit(0)
+    }
   )
   .command(
     'push [project]',
@@ -99,8 +109,9 @@ yargs(hideBin(process.argv))
         description: "Project to download .env",
         type: "string",
       }),
-      (argv) => {
-        addEnvsFromFile(argv.project!, argv.environment, argv.route)
+      async (argv) => {
+        await addEnvsFromFile(argv.project!, argv.environment, argv.route)
+        return process.exit(0)
       }
   )
 

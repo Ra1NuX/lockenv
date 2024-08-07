@@ -34,7 +34,7 @@ const addEnvsFromFile = async (project: string, environment: string, route: stri
   if(!projectData) {
     const createConfirm = confirm('There is no project with this name, do you want to create it automatically?');
     if(!createConfirm) return;
-    const id = createProject(projectToUse, environmentToUse);
+    const id = await createProject(projectToUse, environmentToUse);
     projectData = {
       id,
     }
@@ -71,7 +71,10 @@ const addEnvsFromFile = async (project: string, environment: string, route: stri
     if(!newValue) {
       deletedEnvs.push(env);
     }else if(newValue !== value) {
-      modifiedEnvs.push(env)
+      modifiedEnvs.push({
+        key,
+        value: newValue,
+      })
     } else {
       equalEnvs.push(env)
     }
@@ -83,7 +86,7 @@ const addEnvsFromFile = async (project: string, environment: string, route: stri
   })
 
   equalEnvs.forEach(({key, value}) => {
-    log(chalk.bold(`[   ] ${key}=${value}`));
+    log(chalk.bold(`[ ✓ ] ${key}=${value}`));
   })
   
   const deleteData = deletedEnvs.map(({key, value}) => {
@@ -92,12 +95,12 @@ const addEnvsFromFile = async (project: string, environment: string, route: stri
   })
 
   const dQuery = db.query(`DELETE FROM environments WHERE project_id=${projectId} AND key IN (${deleteData.join(', ')})`);
-  console.log(dQuery.all())
+  dQuery.run()
 
   modifiedEnvs.forEach(({key, value}) => {
     log(chalk.yellow.bold(`[ % ] ${key}=${value}`));
-    const mQuery = db.query(`UPDATE environments SET value=${value} WHERE project_id=${projectId} AND key=${key}`);
-    mQuery.run();
+    const mQuery = db.query(`UPDATE environments SET value=? WHERE project_id=? AND key=?`);
+    mQuery.run(value, projectId!, key)
   })
 
   createdEnvs.forEach(({key, value}) => {
@@ -105,7 +108,6 @@ const addEnvsFromFile = async (project: string, environment: string, route: stri
     const insertQuery = db.query(`INSERT INTO environments (project_id, key, value) VALUES (?,?,?)`);
     insertQuery.run(projectId!, key, value);
   })
-
 }
 
 export default addEnvsFromFile;
