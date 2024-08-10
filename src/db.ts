@@ -1,6 +1,6 @@
 import { Database } from "bun:sqlite";
 
-const db = new Database("/tmp/lockenv.sqlite");
+const db = new Database("./db/lockenv.sqlite");
 
 db.exec("PRAGMA journal_mode = WAL;");
 

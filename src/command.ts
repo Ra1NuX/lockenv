@@ -114,5 +114,4 @@ yargs(hideBin(process.argv))
         return process.exit(0)
       }
   )
-
   .parse();
