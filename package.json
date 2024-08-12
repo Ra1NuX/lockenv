@@ -1,6 +1,6 @@
 {
   "name": "lockenv",
-  "description": "lockenv is a system to have centralized all your environment variables, to be able to have different projects and an easy and simple way to switch between them.",
+  "description": "lockenv is a system to have centralized all your environment variables, to be able to have different projects and an easy and simple way to switch between them, inspired on vercel env CLI",
   "author": "Raimundo martínez núñez",
   "module": "src/index.ts",
   "type": "module",
@@ -23,7 +23,7 @@
     "dist"
   ],
   "bin": {
-    "lockenv": "./dist/index.js"
+    "lockenv": "dist/index.js"
   },
   "dependencies": {
     "@clack/prompts": "^0.7.0",
