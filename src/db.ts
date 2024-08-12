@@ -1,6 +1,12 @@
 import { Database } from "bun:sqlite";
 
-const db = new Database("./db/lockenv.sqlite");
+import { fileURLToPath } from 'url';
+import { dirname } from 'path';
+
+const filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(filename);
+
+const db = new Database(`${__dirname}/db/lockenv.sqlite`);
 
 db.exec("PRAGMA journal_mode = WAL;");
 

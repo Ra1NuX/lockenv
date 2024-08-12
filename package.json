@@ -1,5 +1,7 @@
 {
   "name": "lockenv",
+  "description": "lockenv is a system to have centralized all your environment variables, to be able to have different projects and an easy and simple way to switch between them.",
+  "author": "Raimundo martínez núñez",
   "module": "src/index.ts",
   "type": "module",
   "version": "1.0.1",
@@ -13,13 +15,13 @@
     "lock",
     "lockenv"
   ],
-  "repository": "https://github.com/Ra1NuX/lockenv/",
-  "publishConfig": {
-    "registry": "https://npm.pkg.github.com"
-  },
   "scripts": {
-    "start": "bun run src/index.ts"
+    "start": "bun run src/index.ts",
+    "build": "bun build src/index.ts --outdir ./dist --target=bun && mkdir ./dist/db/ && touch ./dist/db/lockenv.sqlite"
   },
+  "files": [
+    "dist"
+  ],
   "bin": {
     "lockenv": "./src/index.ts"
   },
@@ -29,8 +31,8 @@
     "yargs": "^17.7.2"
   },
   "devDependencies": {
-    "@types/yargs": "^17.0.32",
-    "bun-types": "latest"
+    "@types/bun": "^1.1.6",
+    "@types/yargs": "^17.0.32"
   },
   "peerDependencies": {
     "typescript": "^5.0.0"
