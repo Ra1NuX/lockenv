@@ -5,7 +5,6 @@ import chalk from "chalk";
 
 const list = async (selectedId?: number) => {
   try {
-    console.clear()
     intro(chalk.bgCyan(' List of projects '))
     let id = selectedId;
 

@@ -3,8 +3,7 @@ import db from "../../db";
 import { Projects } from "../../models/db";
 import chalk from "chalk";
 
-const _delete = async (selectedId?: number) => {
-  console.clear();
+const _delete = async (selectedId?: number, force?: boolean) => {
   intro(chalk.bgCyan(' Delete existing project '));
   let id = selectedId; 
 
@@ -48,7 +47,7 @@ const _delete = async (selectedId?: number) => {
 
   const [project] = data;
 
-  const confirmSign = await confirm({
+  const confirmSign = force ? true : await confirm({
     message: `Are you sure you want delete ${project.name} (${project.environment})?`
   });
 

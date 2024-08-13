@@ -9,9 +9,9 @@ import { Environments, Projects } from "../../models/db";
 import checkMetadata from "../checkMetadata";
 import push from "./push";
 import db from "../../db";
+import create from "./create";
 
 const pull = async (project: string|undefined, env: string|undefined, route: string) => {
-  console.clear();
   intro(chalk.bgCyan(` Pull enviroments `));
 
   let sourceEnviroment: string, sourceProject: string;
@@ -41,7 +41,6 @@ const pull = async (project: string|undefined, env: string|undefined, route: str
         s.stop(`Enviroments saved in ${sourceProject} (${sourceEnviroment})`)
       }
     }
-    await unlink(route);
   }
   
   let id: number|null = null;
@@ -68,8 +67,10 @@ const pull = async (project: string|undefined, env: string|undefined, route: str
     const data = querySelect.all();
 
     if(!data?.length) {
-      cancel('No project exists');
-      return process.exit(0);
+      const newProject = await confirm({message: `You don't have a projects yet, Do you want to create a new project?`});
+      if(newProject) {
+        await create();
+      }
     }
 
     id = await select({
@@ -93,7 +94,7 @@ const pull = async (project: string|undefined, env: string|undefined, route: str
   if (data.length !== 0) {
     envData+= data.map((env) => `${env.key}=${env.value}`).join('\n');
   }
-
+  await unlink(route);
   const s = spinner()
   s.start('Downloading File...');
   await Bun.write(route, envData);
