@@ -18,6 +18,7 @@ jobs:
           bun-version: latest
       - run: bun install
       - run: NODE_ENV=production bun run build
+      - run: bun test
       - run: ./dist/index.js list
       - uses: actions/setup-node@v4
         with:
