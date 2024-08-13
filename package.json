@@ -4,7 +4,7 @@
   "author": "Raimundo martínez núñez",
   "module": "src/index.ts",
   "type": "module",
-  "version": "1.0.11",
+  "version": "1.0.15",
   "keywords": [
     "enviroments",
     "envs",
@@ -23,7 +23,7 @@
     "dist"
   ],
   "bin": {
-    "lockenv": "dist/index.js"
+    "lockenv": "src/index.ts"
   },
   "dependencies": {
     "@clack/prompts": "^0.7.0",

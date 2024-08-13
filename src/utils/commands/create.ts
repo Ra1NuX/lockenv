@@ -5,7 +5,6 @@ import chalk from "chalk";
 
 const create = async (name?: string, environment?: string) => {
   try {
-    console.clear()
     intro(chalk.bgCyan(' Create new project '));
     if(!name) {
       name = await text({

@@ -1,5 +1,5 @@
 import db from "../../db";
-import { Projects } from "../../models/db";
+import { Environments, Projects } from "../../models/db";
 
 const add = (
   key: string,
@@ -12,19 +12,19 @@ const add = (
   );
 
   const data = projectQuery.get(project, environment);
-  console.log(project, environment);
 
   if (data) {
-    const environmentQuery = db.prepare(
+    const environmentQuery = db.prepare<Environments, any>(
       `INSERT INTO environments (project_id, key, value)
-       SELECT project_id, ?, ?
+       SELECT project_id as id, ?, ?
        FROM projects
-       WHERE project_id = ?`
+       WHERE project_id = ?
+       RETURNING id`
     );
-    const response = environmentQuery.run(key, value, data.id);
+    const [project] = environmentQuery.all(key, value, data.id);
 
-    if (response.changes) {
-      console.log("OK!");
+    if (project?.id) {
+      return project.id
     } else {
       console.log("Something went wrong :(");
     }
