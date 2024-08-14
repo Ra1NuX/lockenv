@@ -1,12 +1,16 @@
 import { expect, test } from "bun:test";
 import add from "../src/utils/commands/add";
-import db from "../src/db";
+import db, { environmentsQuery, projectsTableQuery } from "../src/db";
 import create from "../src/utils/commands/create";
 import _delete from "../src/utils/commands/delete";
 import { Projects } from "../src/models/db";
 import list from "../src/utils/commands/list";
 
 let projectId: number;
+
+
+projectsTableQuery.run();
+environmentsQuery.run()
 
 test('delete if exist', async () => {
   await list()
