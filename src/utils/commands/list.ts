@@ -2,6 +2,7 @@ import { cancel, intro, isCancel, select } from "@clack/prompts";
 import db from "../../db";
 import { Environments, Projects } from "../../models/db";
 import chalk from "chalk";
+import getAllProjects from "../getAllProjects";
 
 const list = async (selectedId?: number) => {
   try {
@@ -9,12 +10,8 @@ const list = async (selectedId?: number) => {
     let id = selectedId;
 
     if(!id) {
-      const projectQuery = db.query<Projects, any>(
-        `SELECT project_id as id, name, environment FROM projects`
-      );
-      const rows = projectQuery.all();
-  
-      if (!rows.length) {
+      const projects = getAllProjects();
+      if (!projects.length) {
         cancel(
           "There is no project yet. To create a new project use: lockenv create project <name>"
         );
@@ -41,7 +38,7 @@ const list = async (selectedId?: number) => {
         }
       }
   
-      const rowsWithEnvs = rows.map(({ environment, id, name }) => {
+      const rowsWithEnvs = projects.map(({ environment, id, name }) => {
         const environmentForThisProject = envsByProject.get(id);
         if (environmentForThisProject) {
           let envs = environmentForThisProject

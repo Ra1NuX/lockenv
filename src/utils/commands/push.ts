@@ -85,11 +85,11 @@ const push = async (project: string, environment: string, route: string) => {
   })
 
   equalEnvs.forEach(({key, value}) => {
-    log(chalk.bold(`[ ✓ ] ${key}=${value}`));
+    log(chalk.bold(`✓ ${key}=${value}`));
   })
   
   const deleteData = deletedEnvs.map(({key, value}) => {
-    log(chalk.redBright.bold(`[ - ] ${key}=${value}`));
+    log(chalk.redBright.bold(`- ${key}=${value}`));
     return `"${key}"`;
   })
 
@@ -97,13 +97,13 @@ const push = async (project: string, environment: string, route: string) => {
   dQuery.run()
 
   modifiedEnvs.forEach(({key, value}) => {
-    log(chalk.yellow.bold(`[ % ] ${key}=${value}`));
+    log(chalk.yellow.bold(`% ${key}=${value} (Edited)`));
     const mQuery = db.query(`UPDATE environments SET value=? WHERE project_id=? AND key=?`);
     mQuery.run(value, projectId!, key)
   })
 
   createdEnvs.forEach(({key, value}) => {
-    log(chalk.greenBright.bold(`[ + ] ${key}=${value}`));
+    log(chalk.greenBright.bold(`+ ${key}=${value}`));
     const insertQuery = db.query(`INSERT INTO environments (project_id, key, value) VALUES (?,?,?)`);
     insertQuery.run(projectId!, key, value);
   })

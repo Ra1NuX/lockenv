@@ -10,6 +10,9 @@ import checkMetadata from "../checkMetadata";
 import push from "./push";
 import db from "../../db";
 import create from "./create";
+import getProjectData, { projectDataById } from "../getProjectData";
+import getProjectId from "../getProjectId";
+import getAllProjects from "../getAllProjects";
 
 const pull = async (project: string|undefined, env: string|undefined, route: string) => {
   intro(chalk.bgCyan(` Pull enviroments `));
@@ -23,7 +26,7 @@ const pull = async (project: string|undefined, env: string|undefined, route: str
     text = await file.text()
     const pullConfirm = await confirm({message: `You have a file in route ${route}. Do you want to save actual enviroments?`});
 
-    if(isCancel(pullConfirm)) {
+    if(isCancel(pullConfirm)||!pullConfirm) {
       cancel('Exiting process')
       return process.exit(0);
     }
@@ -39,51 +42,57 @@ const pull = async (project: string|undefined, env: string|undefined, route: str
         sourceProject = p;
         await push(sourceProject, sourceEnviroment, route);
         s.stop(`Enviroments saved in ${sourceProject} (${sourceEnviroment})`)
+      } else {
+        intro(chalk.bgCyan(' Create a new project to save your data '));
+        const id = await create();
+        if(id) {
+          const project = projectDataById.get(id)
+          if(project) {
+            await push(project.name, project.environment, route);
+            s.stop(`Enviroments saved in ${project?.name} (${project?.environment})`)
+          }
+        } else {
+          cancel("Something went wrong we can't create a project")
+        }
       }
     }
   }
   
-  let id: number|null = null;
+  let id: number|undefined;
 
   if(project && env){
-    const projectQuery = db.query<Projects, any>('SELECT project_id as id FROM projects WHERE name=? AND environment=?');
-    const projects = projectQuery.all(project, env);
-  
-    if (projects.length === 0) {
-      confirm
-      cancel('No project found with the specified name and environment');
-      return process.exit(0);
-    }
-  
-    const [tproject] = projects;
-    id = tproject.id;
+    id = getProjectId(project, env);
   }
 
   if(!id) {
-    const querySelect = db.query<Projects, any>(
-      `SELECT project_id as id, name, environment FROM projects`
-    );
-    
-    const data = querySelect.all();
+    const projects = getAllProjects();
 
-    if(!data?.length) {
+    if(!projects?.length) {
       const newProject = await confirm({message: `You don't have a projects yet, Do you want to create a new project?`});
       if(newProject) {
-        await create();
+        id = await create() as number;
+
+        const projectData = getProjectData(id);
+        if(!projectData) return;
+
+        project=projectData.name,
+        env=projectData.environment
       }
     }
 
-    id = await select({
-      message: 'Select a project',
-      initialValue: data.find(({environment, name}) => sourceProject === name && environment === sourceEnviroment )?.id,
-      options: data.sort((a,b) => a.name.localeCompare(b.name) ).map(({id, name, environment}) => ({
-        label: `${name} (${environment})`,
-        value: id,
-      }))
-    }) as number;
+    if(!id) {
+      id = await select({
+        message: 'Select a project',
+        initialValue: projects.find(({environment, name}) => sourceProject === name && environment === sourceEnviroment )?.id,
+        options: projects.sort((a,b) => a.name.localeCompare(b.name) ).map(({id, name, environment}) => ({
+          label: `${name} (${environment})`,
+          value: id,
+        }))
+      }) as number;
+      project = projects.find(({id: dataId}) => dataId === id)?.name;
+      env = projects.find(({id: dataId}) => dataId === id)?.environment;
+    }
 
-    project = data.find(({id: dataId}) => dataId === id)?.name;
-    env = data.find(({id: dataId}) => dataId === id)?.environment;
   }
 
   const envQuery = db.query<Environments, any>('SELECT key, value FROM environments WHERE project_id=?');
@@ -92,7 +101,7 @@ const pull = async (project: string|undefined, env: string|undefined, route: str
   let envData = `# lockenv ${version} · ${project}&${env} \n`
 
   if (data.length !== 0) {
-    envData+= data.map((env) => `${env.key}=${env.value}`).join('\n');
+    envData+= data.map((env) => `${env.key}="${env.value}"`).join('\n');
   }
   await unlink(route);
   const s = spinner()

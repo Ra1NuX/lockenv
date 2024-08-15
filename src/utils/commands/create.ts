@@ -2,6 +2,8 @@ import { cancel, intro, isCancel, select, spinner, text } from "@clack/prompts";
 import db from "../../db";
 import { Projects } from "../../models/db";
 import chalk from "chalk";
+import getProjectId from "../getProjectId";
+import { projectDataById } from "../getProjectData";
 
 const create = async (name?: string, environment?: string) => {
   try {
@@ -32,19 +34,20 @@ const create = async (name?: string, environment?: string) => {
     }
     const s = spinner();
     s.start('Initialization project');
-    const querySelect = db.query(
-      `SELECT * FROM projects WHERE name=?1 AND environment = ?2`
-    );
-    const data = querySelect.all(name!, environment!);
-    if (data.length) {
+
+    const id = getProjectId(name, environment);
+
+    if (id) {
       cancel("You have a project with the same name and enviroment");
-      return process.exit(0)
+      return process.exit(0);
     }
   
     const query = db.query<Projects, any>(
       `INSERT INTO projects (name, environment) VALUES (?1, ?2) RETURNING project_id as id`
     );
     const [response] = query.all(name, environment);
+    projectDataById.set(response.id, {id: response.id, environment: environment!, name})
+
     s.stop(`Project ${name} added successfully`);
 
     return response.id

@@ -1,5 +1,6 @@
 import db from "../../db";
 import { Environments, Projects } from "../../models/db";
+import getProjectId from "../getProjectId";
 
 const add = (
   key: string,
@@ -7,13 +8,9 @@ const add = (
   { project, environment }: { project: string; environment: string }
 ) => {
   
-  const projectQuery = db.prepare<Projects, any>(
-    "SELECT project_id as id FROM projects WHERE name = ? AND environment = ?"
-  );
+  const id = getProjectId(project, environment);
 
-  const data = projectQuery.get(project, environment);
-
-  if (data) {
+  if (id) {
     const environmentQuery = db.prepare<Environments, any>(
       `INSERT INTO environments (project_id, key, value)
        SELECT project_id as id, ?, ?
@@ -21,7 +18,7 @@ const add = (
        WHERE project_id = ?
        RETURNING id`
     );
-    const [project] = environmentQuery.all(key, value, data.id);
+    const [project] = environmentQuery.all(key, value, id);
 
     if (project?.id) {
       return project.id

@@ -2,26 +2,23 @@ import { select, confirm, isCancel, cancel, intro} from "@clack/prompts";
 import db from "../../db";
 import { Projects } from "../../models/db";
 import chalk from "chalk";
+import getAllProjects from "../getAllProjects";
 
 const _delete = async (selectedId?: number, force?: boolean) => {
   intro(chalk.bgCyan(' Delete existing project '));
   let id = selectedId; 
 
   if(!id) {
-    const querySelect = db.query<Projects, any>(
-      `SELECT project_id as id, name, environment FROM projects`
-    );
-    
-    const data = querySelect.all();
+    const projects = getAllProjects()
 
-    if(!data?.length) {
+    if(!projects?.length) {
       cancel('No project exists');
       return process.exit(0);
     }
 
     id = await select({
       message: 'Select a project to delete',
-      options: data.sort( ({name: nameA}, {name: nameB}) => nameA.localeCompare(nameB)).map(({id, name, environment}) => ({
+      options: projects.sort( ({name: nameA}, {name: nameB}) => nameA.localeCompare(nameB)).map(({id, name, environment}) => ({
         label: `${name} (${environment})`,
         value: id,
       }))

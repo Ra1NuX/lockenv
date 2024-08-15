@@ -4,7 +4,6 @@ import db, { environmentsQuery, projectsTableQuery } from "../src/db";
 import create from "../src/utils/commands/create";
 import _delete from "../src/utils/commands/delete";
 import { Projects } from "../src/models/db";
-import list from "../src/utils/commands/list";
 
 let projectId: number;
 
@@ -13,7 +12,6 @@ projectsTableQuery.run();
 environmentsQuery.run()
 
 test('delete if exist', async () => {
-  await list()
   const query = db.query<Projects, any>('SELECT project_id as id FROM projects');
   const data = query.all();
   for(let project of data) {
