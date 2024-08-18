@@ -4,7 +4,7 @@
   "author": "Raimundo martínez núñez",
   "module": "src/index.ts",
   "type": "module",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "keywords": [
     "enviroments",
     "envs",
@@ -13,7 +13,11 @@
     "envs manager",
     "sync",
     "lock",
-    "lockenv"
+    "lockenv",
+    "cli",
+    "front-end",
+    "back-end",
+    "mobile"
   ],
   "scripts": {
     "start": "bun run src/index.ts",
