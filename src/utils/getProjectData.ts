@@ -1,5 +1,6 @@
 import db from "../db";
 import { Projects } from "../models/db";
+import logger from "./logger";
 
 export const projectDataById = new Map<number, Projects>();
 
@@ -21,8 +22,8 @@ const getProjectData = (id: number): Projects | undefined => {
 
     throw Error('There are no projects with this ID');
   } catch (ex) {
-    const {message, stack} = ex as Error;
-    console.log(message??stack)
+    const { message, stack } = ex as Error;
+    logger.error(message??stack)
   }
 };
 

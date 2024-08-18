@@ -1,33 +1,40 @@
 import db from "../../db";
+import { Config } from "../../models/config";
 import { Environments, Projects } from "../../models/db";
 import getProjectId from "../getProjectId";
+import logger from "../logger";
 
-const add = (
-  key: string,
-  value: string,
-  { project, environment }: { project: string; environment: string }
-) => {
-  
-  const id = getProjectId(project, environment);
+const add = (key: string, value: string, { force, ...config }: Config) => {
+  let id;
 
-  if (id) {
-    const environmentQuery = db.prepare<Environments, any>(
-      `INSERT INTO environments (project_id, key, value)
-       SELECT project_id as id, ?, ?
+  if ("id" in config) {
+    id = config.id;
+  } else {
+    const { project, environment } = config;
+    id = getProjectId(project, environment);
+  }
+
+  if (!id) {
+    logger.cancel("Something went wrong");
+    return;
+  }
+
+  const environmentQuery = db.prepare<Environments, any>(
+    `INSERT INTO environments (project_id, key, value)
+       SELECT project_id, ?, ?
        FROM projects
        WHERE project_id = ?
-       RETURNING id`
-    );
-    const [project] = environmentQuery.all(key, value, id);
+       RETURNING id, project_id, key, value`
+  );
 
-    if (project?.id) {
-      return project.id
-    } else {
-      console.log("Something went wrong :(");
-    }
-  } else {
-    console.log("No matching project found.");
+  const [enviroment] = environmentQuery.all(key, value, id);
+
+  if (enviroment?.project_id) {
+    return enviroment.project_id;
   }
+  
+  logger.cancel("Something went wrong");
+
 };
 
 export default add;

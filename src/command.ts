@@ -32,7 +32,7 @@ yargs(hideBin(process.argv))
     async (argv) => {
       let project: string|symbol|undefined = argv.project;
       let env: string|symbol = argv.environment;
-      await create(project, env);
+      await create({project, environment: env});
       process.exit(0);
     }
   )
@@ -44,7 +44,10 @@ yargs(hideBin(process.argv))
         description: "project id to list envs",
         type: "number",
       }),
-    (argv) => list(argv.id)
+    async (argv) => {
+      await list({ id: argv.id! })
+      process.exit(0)
+    }
   )
   .command(
     "add <project> <key_value>",
@@ -85,7 +88,7 @@ yargs(hideBin(process.argv))
         type: "number",
       }),
     (argv) => {
-      _delete(argv.id)
+      _delete({id: argv.id!})
     }
   )
   .command(
@@ -97,7 +100,7 @@ yargs(hideBin(process.argv))
         type: "string",
       }),
     async (argv) => {
-      await pull(argv.project!, argv.environment, argv.route);
+      await pull({project:argv.project!, environment:argv.environment, route: argv.route});
       process.exit(0)
     }
   )
@@ -110,7 +113,7 @@ yargs(hideBin(process.argv))
         type: "string",
       }),
       async (argv) => {
-        await push(argv.project!, argv.environment, argv.route)
+        await push({project: argv.project!, environment: argv.environment, route: argv.route})
         return process.exit(0)
       }
   )
