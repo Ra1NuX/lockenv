@@ -13,7 +13,11 @@
     "envs manager",
     "sync",
     "lock",
-    "lockenv"
+    "lockenv",
+    "cli",
+    "front-end",
+    "back-end",
+    "mobile"
   ],
   "scripts": {
     "start": "bun run src/index.ts",
