@@ -29,6 +29,7 @@ jobs:
       - run: bun install
       - run: NODE_ENV=production bun run build
       - run: ./dist/index.js list
+      - run: rm -rF ./src/
       - uses: actions/setup-node@v4
         with:
           node-version: 20
