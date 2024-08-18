@@ -7,7 +7,11 @@ import _delete from "./utils/commands/delete";
 import add from "./utils/commands/add";
 import pull from "./utils/commands/pull";
 
+import {version, name} from '../package.json'
+
 yargs(hideBin(process.argv))
+  .scriptName(name)
+  .version(version)
   .option("environment", {
     alias: "env",
     type: "string",
