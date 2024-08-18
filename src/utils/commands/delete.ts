@@ -1,66 +1,68 @@
-import { select, confirm, isCancel, cancel, intro} from "@clack/prompts";
+import { isCancel } from "@clack/prompts";
 import db from "../../db";
-import { Projects } from "../../models/db";
+import getAllProjects from "../getAllProjects";
+import { Config } from "../../models/config";
+import getProjectId from "../getProjectId";
+import getProjectData, { projectDataById } from "../getProjectData";
+import logger from "../logger";
+import selectProjectId from "../selectProjectId";
 import chalk from "chalk";
 
-const _delete = async (selectedId?: number, force?: boolean) => {
-  intro(chalk.bgCyan(' Delete existing project '));
-  let id = selectedId; 
+const _delete = async ({ force, silent, ...config }: Config) => {
+  try {
+    logger.setConfig({ silent, force });
+    logger.intro('Delete project')
+    let id;
 
-  if(!id) {
-    const querySelect = db.query<Projects, any>(
-      `SELECT project_id as id, name, environment FROM projects`
-    );
-    
-    const data = querySelect.all();
-
-    if(!data?.length) {
-      cancel('No project exists');
-      return process.exit(0);
+    if ("id" in config) {
+      id = config.id;
+    } else {
+      id = getProjectId(config.project, config.environment);
     }
 
-    id = await select({
-      message: 'Select a project to delete',
-      options: data.sort( ({name: nameA}, {name: nameB}) => nameA.localeCompare(nameB)).map(({id, name, environment}) => ({
-        label: `${name} (${environment})`,
-        value: id,
-      }))
-    }) as number;
+    if (!id) {
+      const projects = getAllProjects();
 
-    if(!id || isCancel(id)) {
-      cancel('Exitting...');
-      process.exit(0)
+      if (!projects?.length) {
+        logger.cancel("You haven't any projects yet");
+        return;
+      }
+
+      id = await selectProjectId({
+        title: "Select a project to delete",
+      })
+
+      if (!id || isCancel(id)) {
+        return;
+      }
     }
-  }
 
-  const querySelect = db.query<Projects, any>(
-    `SELECT * FROM projects WHERE project_id=?1`
-  );
-  const data = querySelect.all(id);
+    const project = getProjectData(id);
+    if (!project) {
+      logger.cancel(
+        "You dont have any project with this ID use lockenv list to check the id tables"
+      );
+      return;
+    }
 
-  if (!data.length) {
-    cancel(
-      "You dont have any project with this ID use lockenv list to check the id tables"
-    );
-    return process.exit(0);
-  }
+    const confirmSign = await logger.confirm({
+      message: `Are you sure you want delete ${project.name} (${project.environment})?`,
+    });
 
-  const [project] = data;
+    if (isCancel(confirmSign) || !confirmSign) {
+      logger.cancel("Operation cancelled");
+      return;
+    }
 
-  const confirmSign = force ? true : await confirm({
-    message: `Are you sure you want delete ${project.name} (${project.environment})?`
-  });
-
-  if (isCancel(confirmSign)) {
-    cancel('Operation cancelled');
-    return process.exit(0);
-  }
-
-  if (confirmSign) {
     const query = db.query(`DELETE FROM projects WHERE project_id = ?`);
     query.run(id!);
+    projectDataById.delete(id);
+
+    logger.outro(chalk.greenBright(`${chalk.yellow('"'+project.name+'"')} was successfully eliminated!`));
+  } catch (ex) {
+    const { message, stack } = ex as Error;
+    logger.error(message ?? stack);
   }
-  return;
 };
 
 export default _delete;

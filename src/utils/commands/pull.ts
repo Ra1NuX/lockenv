@@ -1,104 +1,160 @@
-
-import { cancel, confirm, intro, isCancel, outro, select, spinner } from "@clack/prompts";
+import {
+  isCancel,
+  select,
+} from "@clack/prompts";
 import { unlink } from "node:fs/promises";
-import chalk from "chalk";
 
-import { version } from "../../../package.json";
-
-import { Environments, Projects } from "../../models/db";
+import { Environments } from "../../models/db";
 import checkMetadata from "../checkMetadata";
 import push from "./push";
 import db from "../../db";
 import create from "./create";
+import getProjectData, { projectDataById } from "../getProjectData";
+import getProjectId from "../getProjectId";
+import getAllProjects from "../getAllProjects";
+import logger from "../logger";
+import { BasicConfig, Config } from "../../models/config";
+import createMetadata from "../createMetadata";
+import selectProjectId from "../selectProjectId";
+import chalk from "chalk";
 
-const pull = async (project: string|undefined, env: string|undefined, route: string) => {
-  intro(chalk.bgCyan(` Pull enviroments `));
+const pull = async (config: Config, callbackProject?: BasicConfig) => {
+  try {
+    logger.setConfig({ silent: config.silent, force: config.force });
+    logger.intro("Pull enviroments");
 
-  let sourceEnviroment: string, sourceProject: string;
+    let sourceEnviroment: string, sourceProject: string;
 
-  const file = Bun.file(route);
-  let text; 
+    if (!config.route) return;
+    const file = Bun.file(config.route);
+    let text;
 
-  if(await file.exists()){
-    text = await file.text()
-    const pullConfirm = await confirm({message: `You have a file in route ${route}. Do you want to save actual enviroments?`});
+    if (await file.exists()) {
+      text = await file.text();
 
-    if(isCancel(pullConfirm)) {
-      cancel('Exiting process')
-      return process.exit(0);
-    }
+      const pullConfirm = await logger.confirm({
+        message: `You have a file in route ${config.route}. Do you want to save actual enviroments?`,
+      });
 
-    if(pullConfirm) {
-      const s = spinner()
-      s.message('Saving actual project')
-      s.start()
-      const { project: p, environment:e } = checkMetadata(text??'');
+      if (isCancel(pullConfirm)) {
+        logger.cancel('Exitting...');
+        return;
+      }
 
-      if(p && e) {
-        sourceEnviroment = e; 
+      if(pullConfirm) {
+
+      const { project: p, environment: e } = checkMetadata(text ?? "");
+
+      if (p && e) {
+        sourceEnviroment = e;
         sourceProject = p;
-        await push(sourceProject, sourceEnviroment, route);
-        s.stop(`Enviroments saved in ${sourceProject} (${sourceEnviroment})`)
+        await push({
+          project: sourceProject,
+          environment: sourceEnviroment,
+          route: config.route,
+          silent: config.silent,
+          force: config.force,
+        });
+        
+      } else {
+        logger.intro("Create a new project to save your data");
+        const id = await create({
+          ...callbackProject,
+          silent: config.silent,
+          force: config.force,
+        });
+        if (id) {
+          const newCreatedProject = projectDataById.get(id);
+          if (newCreatedProject) {
+            await push({
+              project: newCreatedProject.name,
+              environment: newCreatedProject.environment,
+              route: config.route,
+              silent: config.silent,
+              force: config.force,
+            });
+           
+          }
+        } else {
+          logger.cancel("Something went wrong we can't create a project");
+        }
       }
     }
-  }
-  
-  let id: number|null = null;
-
-  if(project && env){
-    const projectQuery = db.query<Projects, any>('SELECT project_id as id FROM projects WHERE name=? AND environment=?');
-    const projects = projectQuery.all(project, env);
-  
-    if (projects.length === 0) {
-      confirm
-      cancel('No project found with the specified name and environment');
-      return process.exit(0);
     }
-  
-    const [tproject] = projects;
-    id = tproject.id;
-  }
 
-  if(!id) {
-    const querySelect = db.query<Projects, any>(
-      `SELECT project_id as id, name, environment FROM projects`
+    let id: number | undefined;
+    let project: string;
+    let env: string;
+
+    if ("id" in config) {
+      id = config.id;
+    } else {
+      id = getProjectId(config.project, config.environment);
+    }
+
+    if (!id) {
+      const projects = getAllProjects();
+
+      if (!projects?.length) {
+        const newProject = await logger.confirm({
+          message: `You don't have a projects yet, Do you want to create a new project?`,
+        });
+        if (newProject) {
+          id = (await create(config)) as number;
+
+          const projectData = getProjectData(id);
+          if (!projectData) return;
+
+          project = projectData.name;
+          env = projectData.environment;
+        }
+      } else if (callbackProject) {
+        if ("id" in callbackProject) {
+          const data = getProjectData(callbackProject.id);
+          if (!data) return;
+
+          project = data.name;
+          env = data.environment;
+        } else {
+          project = callbackProject.project;
+          env = callbackProject.environment;
+        }
+      } else {
+
+        const initialValue = projects.find(
+          ({ environment, name }) =>
+            sourceProject === name && environment === sourceEnviroment
+        )?.id
+        id = await selectProjectId({title: 'Select a project', initialValue, withCreated: false, silent: config.silent, force: config.force})
+
+        if(isCancel(id) || !id) {
+          return;
+        }
+
+        const data = getProjectData(id);
+        if (!data) return;
+
+        project = data.name;
+        env = data.environment;
+      }
+    }
+
+    const envQuery = db.query<Environments, any>(
+      "SELECT key, value FROM environments WHERE project_id=?"
     );
-    
-    const data = querySelect.all();
+    const data = envQuery.all(id);
 
-    if(!data?.length) {
-      const newProject = await confirm({message: `You don't have a projects yet, Do you want to create a new project?`});
-      if(newProject) {
-        await create();
-      }
+    let envData = createMetadata(project!, env!)
+    if (data.length !== 0) {
+      envData += data.map((env) => `${env.key}="${env.value}"`).join("\n");
     }
-
-    id = await select({
-      message: 'Select a project',
-      initialValue: data.find(({environment, name}) => sourceProject === name && environment === sourceEnviroment )?.id,
-      options: data.sort((a,b) => a.name.localeCompare(b.name) ).map(({id, name, environment}) => ({
-        label: `${name} (${environment})`,
-        value: id,
-      }))
-    }) as number;
-
-    project = data.find(({id: dataId}) => dataId === id)?.name;
-    env = data.find(({id: dataId}) => dataId === id)?.environment;
+    await unlink(config.route);
+    await Bun.write(config.route, envData);
+    logger.outro(chalk.greenBright(`You change to ${chalk.yellow(`"${project!} (${env!})"`)} correctly!`));
+  } catch (ex) {
+    const { message, stack } = ex as Error;
+    logger.error(message ?? stack);
   }
-
-  const envQuery = db.query<Environments, any>('SELECT key, value FROM environments WHERE project_id=?');
-  const data = envQuery.all(id);
-
-  let envData = `# lockenv ${version} · ${project}&${env} \n`
-
-  if (data.length !== 0) {
-    envData+= data.map((env) => `${env.key}=${env.value}`).join('\n');
-  }
-  await unlink(route);
-  const s = spinner()
-  s.start('Downloading File...');
-  await Bun.write(route, envData);
-  s.stop(`You change to ${project} (${env}) correctly!`);
 };
 
 export default pull;
