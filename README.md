@@ -29,3 +29,4 @@ lockenv is a system to have centralized all your environment variables, to be ab
 * [ ]  Add integration to remote bbdd.
 * [ ]  Add integration with remote hub.
 
+> I don't have time to maintain this package, so I am making it open source so that everyone who wants to contribute can do so ❤️.
